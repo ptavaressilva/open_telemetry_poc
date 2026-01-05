@@ -1,10 +1,27 @@
 # These are the necessary import declarations
-from opentelemetry import trace
-from opentelemetry import metrics
-
-from random import randint
-from flask import Flask, request
 import logging
+from random import randint
+
+from flask import Flask, request
+from opentelemetry import trace, metrics
+from opentelemetry.exporter.prometheus import PrometheusMetricReader
+from prometheus_client import start_http_server
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+
+# Service name is required for most backends
+resource = Resource.create(attributes={
+    SERVICE_NAME: "diceroll"
+})
+
+# Start Prometheus client
+start_http_server(port=9464, addr="localhost")
+
+# Initialize PrometheusMetricReader which pulls metrics from the SDK
+# on-demand to respond to scrape requests
+reader = PrometheusMetricReader()
+provider = MeterProvider(resource=resource, metric_readers=[reader])
+metrics.set_meter_provider(provider)
 
 # Acquire a tracer
 tracer = trace.get_tracer("diceroller.tracer")
